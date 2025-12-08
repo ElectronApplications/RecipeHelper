@@ -7,38 +7,15 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
-
-@Serializable
-enum class IngredientAmountType {
-    Millilitres,
-    Grams,
-    Pieces
-}
-
-@Serializable
-data class IngredientDescription(
-    val name: String,
-    val amountType: IngredientAmountType,
-)
-
-@Serializable
-data class Ingredient(
-    val ingredient: IngredientDescription,
-    val amount: Double
-)
-
-@Serializable
-data class Recipe(
-    val name: String,
-    val recipeSteps: List<String>,
-    val ingredients: List<Ingredient>
-)
-
-val flour = IngredientDescription(name = "Flour", amountType = IngredientAmountType.Grams)
-val oatMilk = IngredientDescription(name = "Oat milk", amountType = IngredientAmountType.Millilitres)
 
 fun main() {
+    val helper = RecipeHelper()
+    println(helper.nextIngredientsQuestion())
+//    do {
+//        val questions = helper.nextIngredientsQuestion()
+//        println(questions)
+//    } while (questions.isNotEmpty())
+
     println("Starting server")
     embeddedServer(Netty, 8080) {
         install(ContentNegotiation) {
@@ -46,7 +23,7 @@ fun main() {
         }
         routing {
             get("/ingredients") {
-                call.respond(listOf(flour, oatMilk))
+                call.respond(ingredients)
             }
         }
     }.start(wait = true)

@@ -1,0 +1,70 @@
+package recipe_system
+
+import org.example.IngredientAmountType
+import org.example.IngredientDescription
+import org.example.Ingredient
+import org.example.Recipe
+import org.example.UnknownIngredient
+
+dialect "mvel"
+
+declare UserIngredient
+    ingredient : String
+    has: Boolean
+end
+
+declare UserRecipe
+    recipe : Recipe
+    possible: Boolean
+end
+
+declare RecipeIngredient
+    recipe : Recipe
+    ingredient : String
+    amount : Double
+end
+
+query "Unknown Ingredients"
+    $ingredient: UnknownIngredient()
+end
+
+// query "Possible Recipes"
+//     $recipe : PossibleRecipe().recipe
+// end
+
+rule "Initialize Recipe Ingredients"
+    when
+        $recipe : Recipe()
+        $ingredient : Ingredient() from $recipe.ingredients
+        not RecipeIngredient(recipe == $recipe, ingredient == $ingredient.ingredient)
+    then
+        insert(new RecipeIngredient($recipe, $ingredient.ingredient, $ingredient.amount))
+end
+
+rule "Initialize User Ingredients"
+    when
+        $ingredient : IngredientDescription()
+        not UserIngredient(ingredient == $ingredient.id)
+    then
+        insert(new UserIngredient($ingredient.id, null))
+end
+
+rule "Initialize User Recipes"
+    when
+        $recipe : Recipe()
+        not UserRecipe(recipe == $recipe)
+    then
+        insert(new UserRecipe($recipe, null))
+end
+
+rule "Initialize Unknown Ingredients"
+    when
+        $userIngredient: UserIngredient(has == null)
+        $weight : Double() from accumulate(
+            RecipeIngredient(ingredient == $userIngredient.ingredient),
+            count()
+        )
+        not UnknownIngredient(ingredient == $userIngredient.ingredient)
+    then
+        insert(new UnknownIngredient($userIngredient.ingredient, $weight))
+end
