@@ -10,11 +10,16 @@ import io.ktor.server.routing.*
 
 fun main() {
     val helper = RecipeHelper()
-    println(helper.nextIngredientsQuestion())
-//    do {
-//        val questions = helper.nextIngredientsQuestion()
-//        println(questions)
-//    } while (questions.isNotEmpty())
+    println(helper.nextUnknownIngredients())
+    println(helper.recipes())
+//    helper.insertIngredientInfo(IngredientInfo("oatMilk", true))
+//    helper.insertIngredientInfo(IngredientInfo("cocoaPowder", true))
+//    helper.insertIngredientInfo(IngredientInfo("sugar", true))
+    helper.insertIngredientInfo(IngredientInfo("salt", false))
+//    helper.insertIngredientInfo(IngredientInfo("vanillaExtract", true))
+    println(helper.nextUnknownIngredients())
+    println(helper.recipes())
+    helper.close()
 
     println("Starting server")
     embeddedServer(Netty, 8080) {

@@ -5,17 +5,14 @@ import org.example.IngredientDescription
 import org.example.Ingredient
 import org.example.Recipe
 import org.example.UnknownIngredient
+import org.example.IngredientInfo
+import org.example.UserRecipe
 
 dialect "mvel"
 
 declare UserIngredient
     ingredient : String
-    has: Boolean
-end
-
-declare UserRecipe
-    recipe : Recipe
-    possible: Boolean
+    has : Boolean
 end
 
 declare RecipeIngredient
@@ -28,9 +25,9 @@ query "Unknown Ingredients"
     $ingredient: UnknownIngredient()
 end
 
-// query "Possible Recipes"
-//     $recipe : PossibleRecipe().recipe
-// end
+query "User Recipes"
+    $recipe : UserRecipe()
+end
 
 rule "Initialize Recipe Ingredients"
     when
@@ -68,3 +65,45 @@ rule "Initialize Unknown Ingredients"
     then
         insert(new UnknownIngredient($userIngredient.ingredient, $weight))
 end
+
+rule "Process new ingredient info"
+    when
+        $ingredientInfo: IngredientInfo()
+        $userIngredient: UserIngredient(ingredient == $ingredientInfo.ingredient)
+    then
+        $userIngredient.has = $ingredientInfo.has
+        update($userIngredient)
+        delete($ingredientInfo)
+end
+
+rule "Remove unknown ingredient"
+    when
+        $userIngredient: UserIngredient(has != null)
+        $unknownIngredient: UnknownIngredient(ingredient == $userIngredient.ingredient)
+    then
+        delete($unknownIngredient)
+end
+
+rule "Mark user recipe as not possible if an ingredient is missing"
+    when
+        $userRecipe: UserRecipe(possible != false)
+        $recipeIngredient: RecipeIngredient(recipe == $userRecipe.recipe)
+        UserIngredient(ingredient == $recipeIngredient.ingredient, has == false)
+    then
+        $userRecipe.possible = false
+        update($userRecipe)
+end
+
+rule "Mark user recipe as possible if no ingredient is missing"
+    when
+        $userRecipe: UserRecipe(possible != true)
+        not (
+            $recipeIngredient: RecipeIngredient(recipe == $userRecipe.recipe)
+            and
+            UserIngredient(ingredient == $recipeIngredient.ingredient, has != true)
+        )
+    then
+        $userRecipe.possible = true
+        update($userRecipe)
+end
+

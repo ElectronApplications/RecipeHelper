@@ -8,9 +8,21 @@ import org.kie.api.runtime.KieContainer
 import org.kie.api.runtime.KieSession
 import org.kie.internal.io.ResourceFactory
 
+// TODO: amounts
 data class UnknownIngredient(
     val ingredient: String,
     val weight: Double
+)
+
+// TODO: amounts
+data class IngredientInfo(
+    val ingredient: String,
+    val has: Boolean
+)
+
+data class UserRecipe(
+    val recipe: Recipe,
+    var possible: Boolean?
 )
 
 class RecipeHelper : AutoCloseable {
@@ -34,11 +46,17 @@ class RecipeHelper : AutoCloseable {
         kieSession.fireAllRules()
     }
 
-    fun nextIngredientsQuestion(): List<UnknownIngredient> {
-        return kieSession.getQueryResults("Unknown Ingredients").map { it[$$"$ingredient"] as UnknownIngredient }.sortedByDescending { it.weight }
+    fun nextUnknownIngredients(): List<UnknownIngredient> {
+        return kieSession.getQueryResults("Unknown Ingredients").map { it[$$"$ingredient"] as UnknownIngredient }
+            .sortedByDescending { it.weight }
     }
 
-//    fun recipes(): List<Recipe> {
-//        return kieSession.getQueryResults("Possible Recipes").map { it[$$"$recipe"] as Recipe }
-//    }
+    fun insertIngredientInfo(info: IngredientInfo) {
+        kieSession.insert(info)
+        kieSession.fireAllRules()
+    }
+
+    fun recipes(): List<UserRecipe> {
+        return kieSession.getQueryResults("User Recipes").map { it[$$"$recipe"] as UserRecipe }
+    }
 }
