@@ -1,5 +1,7 @@
 package recipe_system
 
+import java.util.List
+
 import org.example.IngredientAmountType
 import org.example.IngredientDescription
 import org.example.Ingredient
@@ -58,7 +60,9 @@ rule "Initialize Unknown Ingredients"
     when
         $userIngredient: UserIngredient(has == null)
         $weight : Double() from accumulate(
-            RecipeIngredient(ingredient == $userIngredient.ingredient),
+            $recipeIngredient: RecipeIngredient(ingredient == $userIngredient.ingredient)
+            and
+            UserRecipe(recipe == $recipeIngredient.recipe, possible != false),
             count()
         )
         not UnknownIngredient(ingredient == $userIngredient.ingredient)
@@ -89,9 +93,14 @@ rule "Mark user recipe as not possible if an ingredient is missing"
         $userRecipe: UserRecipe(possible != false)
         $recipeIngredient: RecipeIngredient(recipe == $userRecipe.recipe)
         UserIngredient(ingredient == $recipeIngredient.ingredient, has == false)
+        $unknownIngredients: List() from collect(UnknownIngredient())
     then
         $userRecipe.possible = false
         update($userRecipe)
+        // TODO: it's better to edit facts and not delete them so they get recreated automatically
+        for (UnknownIngredient unknownIngredient : $unknownIngredients) {
+            delete(unknownIngredient)
+        }
 end
 
 rule "Mark user recipe as possible if no ingredient is missing"
